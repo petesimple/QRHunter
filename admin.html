@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Hunter Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #070b12;
+      --panel: #111927;
+      --panel2: #182436;
+      --text: #f4f8ff;
+      --muted: #99a8bc;
+      --accent: #39f5c6;
+      --accent2: #ffd166;
+      --danger: #ff5c7a;
+      --line: rgba(255,255,255,0.14);
+      --shadow: 0 18px 44px rgba(0,0,0,0.38);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(57,245,198,0.2), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(255,209,102,0.13), transparent 34%),
+        var(--bg);
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header, .card {
+      border: 1px solid var(--line);
+      background: rgba(17,25,39,0.9);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    header {
+      padding: 22px;
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 7vw, 4.8rem);
+      letter-spacing: -0.07em;
+      line-height: 0.95;
+    }
+
+    h2, h3 { margin: 0; }
+
+    p {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .lockscreen {
+      min-height: 72vh;
+      display: grid;
+      place-items: center;
+    }
+
+    .login-box {
+      width: min(480px, 100%);
+      padding: 24px;
+    }
+
+    .login-box h1 {
+      font-size: clamp(2rem, 8vw, 4rem);
+    }
+
+    .login-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #07111b;
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 94px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(57,245,198,0.16);
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: #03110e;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active { transform: translateY(1px); }
+
+    button.secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    button.warn {
+      background: var(--danger);
+      color: white;
+    }
+
+    .hidden { display: none !important; }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .toolbar .left, .toolbar .right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 16px;
+    }
+
+    .card h2 {
+      padding: 18px 18px 0;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .message {
+      min-height: 42px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .qr-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .qr-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .qr-card h3 {
+      font-size: 1.05rem;
+      text-align: center;
+    }
+
+    .qr-card small {
+      color: var(--muted);
+      text-align: center;
+      display: block;
+      line-height: 1.3;
+    }
+
+    .qr-box {
+      background: white;
+      padding: 10px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+    }
+
+    .qr-box canvas, .qr-box img {
+      width: 180px;
+      height: 180px;
+    }
+
+    .pill {
+      justify-self: center;
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(57,245,198,0.1);
+      border: 1px solid rgba(57,245,198,0.32);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .payload {
+      max-height: 80px;
+      overflow: auto;
+      padding: 8px;
+      border-radius: 12px;
+      background: #07111b;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.72rem;
+      word-break: break-word;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 28px;
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 22px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .row2 { grid-template-columns: 1fr; }
+      .login-actions { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+
+      header, .toolbar, .builder, .message, .payload, .qr-actions, .no-print {
+        display: none !important;
+      }
+
+      .app {
+        width: 100%;
+        padding: 0;
+      }
+
+      .grid {
+        display: block;
+      }
+
+      .card {
+        border: 0;
+        box-shadow: none;
+        background: white;
+      }
+
+      .qr-list {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .qr-card {
+        border: 2px solid #222;
+        color: black;
+        background: white;
+      }
+
+      .qr-card small, .pill {
+        color: black;
+      }
+
+      .pill {
+        border: 1px solid black;
+        background: white;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="lockscreen" class="lockscreen app">
+    <section class="card login-box">
+      <h1>QR Hunter Admin</h1>
+      <p>Locked creator page for making wild QR sprite codes. This is a simple local password gate for prototype use.</p>
+      <div class="login-actions">
+        <input id="passwordInput" type="password" placeholder="Admin password" />
+        <button id="unlockBtn">Unlock</button>
+      </div>
+      <div id="loginMessage" class="message">Default prototype password: hunter</div>
+    </section>
+  </div>
+
+  <div id="adminApp" class="app hidden">
+    <header>
+      <h1>QR Hunter Admin</h1>
+      <p>Create QR codes that unlock sprites in the QR Hunter game. Print them, hide them, tape them to mysterious objects, and let the tiny creature crimes begin.</p>
+    </header>
+
+    <div class="toolbar">
+      <div class="left">
+        <button id="printBtn">Print QR Sheet</button>
+        <button id="exportBtn" class="secondary">Export Codes JSON</button>
+        <button id="importBtn" class="secondary">Import Codes JSON</button>
+        <input id="importFile" class="hidden" type="file" accept="application/json" />
+      </div>
+      <div class="right">
+        <button id="clearBtn" class="warn">Clear Codes</button>
+        <button id="lockBtn" class="secondary">Lock</button>
+      </div>
+    </div>
+
+    <main class="grid">
+      <section class="card builder">
+        <h2>Create QR Code</h2>
+        <div class="card-body">
+          <div class="form-grid">
+            <label>
+              Sprite
+              <select id="spriteSelect"></select>
+            </label>
+
+            <div class="row2">
+              <label>
+                Location hint
+                <input id="locationHint" placeholder="Example: 7-6 front desk" />
+              </label>
+              <label>
+                Batch label
+                <input id="batchLabel" placeholder="Example: Week 1" />
+              </label>
+            </div>
+
+            <div class="row2">
+              <label>
+                Number to create
+                <input id="quantity" type="number" min="1" max="50" value="1" />
+              </label>
+              <label>
+                Public note
+                <input id="publicNote" placeholder="Example: You found me!" />
+              </label>
+            </div>
+
+            <label>
+              Admin notes
+              <textarea id="adminNotes" placeholder="Private notes for where you hid this code"></textarea>
+            </label>
+
+            <button id="createBtn">Create QR Code</button>
+          </div>
+          <div id="message" class="message">Ready to make tiny collectible nonsense.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Generated QR Codes</h2>
+        <div class="card-body">
+          <div id="qrList" class="qr-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = "hunter";
+    const AUTH_KEY = "qrHunterAdminUnlockedV1";
+    const CODES_KEY = "qrHunterAdminCodesV1";
+
+    const SPRITES = [
+      {
+        id: "spark-mite",
+        name: "Spark Mite",
+        emoji: "⚡",
+        rarity: "common",
+        habitat: "Power outlets, venues, rehearsal rooms"
+      },
+      {
+        id: "puckling",
+        name: "Puckling",
+        emoji: "🏒",
+        rarity: "common",
+        habitat: "Arcades, game rooms, tournament tables"
+      },
+      {
+        id: "moss-bloop",
+        name: "Moss Bloop",
+        emoji: "🌿",
+        rarity: "common",
+        habitat: "Parks, gardens, sleepy sidewalks"
+      },
+      {
+        id: "neon-newt",
+        name: "Neon Newt",
+        emoji: "🦎",
+        rarity: "rare",
+        habitat: "Murals, music venues, late night snack zones"
+      },
+      {
+        id: "echo-owl",
+        name: "Echo Owl",
+        emoji: "🦉",
+        rarity: "rare",
+        habitat: "Libraries, theaters, quiet corners"
+      },
+      {
+        id: "golden-gobbo",
+        name: "Golden Gobbo",
+        emoji: "👑",
+        rarity: "legendary",
+        habitat: "Secret spots and championship locations"
+      }
+    ];
+
+    const lockscreen = document.getElementById("lockscreen");
+    const adminApp = document.getElementById("adminApp");
+    const passwordInput = document.getElementById("passwordInput");
+    const loginMessage = document.getElementById("loginMessage");
+    const spriteSelect = document.getElementById("spriteSelect");
+    const qrList = document.getElementById("qrList");
+    const message = document.getElementById("message");
+
+    function uid() {
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    function loadCodes() {
+      try {
+        return JSON.parse(localStorage.getItem(CODES_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCodes(codes) {
+      localStorage.setItem(CODES_KEY, JSON.stringify(codes));
+    }
+
+    function setMessage(text) {
+      message.textContent = text;
+    }
+
+    function encodePayload(payload) {
+      return `QRHUNTER:${btoa(JSON.stringify(payload))}`;
+    }
+
+    function unlock() {
+      if (passwordInput.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem(AUTH_KEY, "yes");
+        showAdmin();
+      } else {
+        loginMessage.textContent = "Nope. The sprites have rejected your paperwork.";
+      }
+    }
+
+    function lock() {
+      sessionStorage.removeItem(AUTH_KEY);
+      passwordInput.value = "";
+      lockscreen.classList.remove("hidden");
+      adminApp.classList.add("hidden");
+    }
+
+    function showAdmin() {
+      lockscreen.classList.add("hidden");
+      adminApp.classList.remove("hidden");
+      renderCodes();
+    }
+
+    function setupSpriteSelect() {
+      spriteSelect.innerHTML = SPRITES.map(sprite => {
+        return `<option value="${sprite.id}">${sprite.emoji} ${sprite.name} (${sprite.rarity})</option>`;
+      }).join("");
+    }
+
+    function createCodes() {
+      const spriteId = spriteSelect.value;
+      const sprite = SPRITES.find(item => item.id === spriteId);
+      const locationHint = document.getElementById("locationHint").value.trim() || "Mystery spot";
+      const batchLabel = document.getElementById("batchLabel").value.trim() || "Unbatched";
+      const publicNote = document.getElementById("publicNote").value.trim();
+      const adminNotes = document.getElementById("adminNotes").value.trim();
+      const quantity = Math.min(50, Math.max(1, Number(document.getElementById("quantity").value || 1)));
+
+      const codes = loadCodes();
+      const created = [];
+
+      for (let i = 0; i < quantity; i++) {
+        const codeId = uid();
+        const payload = {
+          game: "QRHunter",
+          version: 1,
+          codeId,
+          spriteId,
+          locationHint,
+          publicNote,
+          batchLabel,
+          createdAt: new Date().toISOString()
+        };
+
+        created.push({
+          codeId,
+          spriteId,
+          spriteName: sprite.name,
+          emoji: sprite.emoji,
+          rarity: sprite.rarity,
+          locationHint,
+          batchLabel,
+          publicNote,
+          adminNotes,
+          payload: encodePayload(payload),
+          createdAt: payload.createdAt
+        });
+      }
+
+      saveCodes([...created, ...codes]);
+      renderCodes();
+      setMessage(`Created ${created.length} QR code${created.length === 1 ? "" : "s"} for ${sprite.name}.`);
+    }
+
+    function renderCodes() {
+      const codes = loadCodes();
+
+      if (!codes.length) {
+        qrList.innerHTML = `<div class="empty">No QR codes yet. Create one and release the sprites into polite society.</div>`;
+        return;
+      }
+
+      qrList.innerHTML = codes.map(code => `
+        <article class="qr-card" data-code-id="${code.codeId}">
+          <span class="pill">${code.rarity}</span>
+          <h3>${code.emoji} ${code.spriteName}</h3>
+          <div class="qr-box"><canvas id="qr-${code.codeId}"></canvas></div>
+          <small>${code.locationHint}</small>
+          <small>${code.batchLabel}</small>
+          ${code.publicNote ? `<small>${code.publicNote}</small>` : ""}
+          <div class="payload">${code.payload}</div>
+          <div class="qr-actions no-print">
+            <button class="secondary" onclick="copyPayload('${code.codeId}')">Copy</button>
+            <button class="secondary" onclick="downloadQR('${code.codeId}')">Download PNG</button>
+            <button class="warn" onclick="deleteCode('${code.codeId}')">Delete</button>
+          </div>
+        </article>
+      `).join("");
+
+      codes.forEach(code => {
+        const canvas = document.getElementById(`qr-${code.codeId}`);
+        QRCode.toCanvas(canvas, code.payload, {
+          width: 220,
+          margin: 2,
+          errorCorrectionLevel: "M"
+        });
+      });
+    }
+
+    function copyPayload(codeId) {
+      const code = loadCodes().find(item => item.codeId === codeId);
+      if (!code) return;
+      navigator.clipboard.writeText(code.payload);
+      setMessage(`Copied payload for ${code.spriteName}.`);
+    }
+
+    function downloadQR(codeId) {
+      const canvas = document.getElementById(`qr-${codeId}`);
+      const code = loadCodes().find(item => item.codeId === codeId);
+      if (!canvas || !code) return;
+
+      const link = document.createElement("a");
+      link.download = `qr-hunter-${code.spriteId}-${code.codeId}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    function deleteCode(codeId) {
+      if (!confirm("Delete this QR code?")) return;
+      const codes = loadCodes().filter(item => item.codeId !== codeId);
+      saveCodes(codes);
+      renderCodes();
+      setMessage("QR code deleted. Tiny beast released from duty.");
+    }
+
+    function clearCodes() {
+      if (!confirm("Clear all generated QR codes from this browser?")) return;
+      localStorage.removeItem(CODES_KEY);
+      renderCodes();
+      setMessage("All generated codes cleared from this browser.");
+    }
+
+    function exportCodes() {
+      const codes = loadCodes();
+      const blob = new Blob([JSON.stringify(codes, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `qr-hunter-codes-${new Date().toISOString().slice(0,10)}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      setMessage("Exported QR Hunter codes JSON.");
+    }
+
+    function importCodesFile(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (!Array.isArray(imported)) throw new Error("Not an array");
+          const existing = loadCodes();
+          const merged = [...imported, ...existing];
+          const seen = new Set();
+          const deduped = merged.filter(code => {
+            if (!code.codeId || seen.has(code.codeId)) return false;
+            seen.add(code.codeId);
+            return true;
+          });
+          saveCodes(deduped);
+          renderCodes();
+          setMessage(`Imported ${imported.length} code records.`);
+        } catch {
+          setMessage("Import failed. That JSON file did not look like QR Hunter codes.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    document.getElementById("unlockBtn").addEventListener("click", unlock);
+    passwordInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") unlock();
+    });
+    document.getElementById("lockBtn").addEventListener("click", lock);
+    document.getElementById("createBtn").addEventListener("click", createCodes);
+    document.getElementById("printBtn").addEventListener("click", () => window.print());
+    document.getElementById("clearBtn").addEventListener("click", clearCodes);
+    document.getElementById("exportBtn").addEventListener("click", exportCodes);
+    document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (file) importCodesFile(file);
+      event.target.value = "";
+    });
+
+    setupSpriteSelect();
+
+    if (sessionStorage.getItem(AUTH_KEY) === "yes") {
+      showAdmin();
+    }
+  </script>
+</body>
+</html>
