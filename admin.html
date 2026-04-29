@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QR Hunter Admin</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       --bg: #070b12;
@@ -578,7 +578,7 @@
         <article class="qr-card" data-code-id="${code.codeId}">
           <span class="pill">${code.rarity}</span>
           <h3>${code.emoji} ${code.spriteName}</h3>
-          <div class="qr-box"><canvas id="qr-${code.codeId}"></canvas></div>
+          <div class="qr-box" id="qr-${code.codeId}"></div>
           <small>${code.locationHint}</small>
           <small>${code.batchLabel}</small>
           ${code.publicNote ? `<small>${code.publicNote}</small>` : ""}
@@ -592,11 +592,15 @@
       `).join("");
 
       codes.forEach(code => {
-        const canvas = document.getElementById(`qr-${code.codeId}`);
-        QRCode.toCanvas(canvas, code.payload, {
+        const box = document.getElementById(`qr-${code.codeId}`);
+        box.innerHTML = "";
+        new QRCode(box, {
+          text: code.payload,
           width: 220,
-          margin: 2,
-          errorCorrectionLevel: "M"
+          height: 220,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
         });
       });
     }
@@ -609,13 +613,15 @@
     }
 
     function downloadQR(codeId) {
-      const canvas = document.getElementById(`qr-${codeId}`);
+      const box = document.getElementById(`qr-${codeId}`);
       const code = loadCodes().find(item => item.codeId === codeId);
-      if (!canvas || !code) return;
+      if (!box || !code) return;
 
+      const img = box.querySelector("img");
+      const canvas = box.querySelector("canvas");
       const link = document.createElement("a");
       link.download = `qr-hunter-${code.spriteId}-${code.codeId}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = img ? img.src : canvas.toDataURL("image/png");
       link.click();
     }
 
