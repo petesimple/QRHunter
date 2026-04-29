@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Hunter</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    :root {
+      --bg: #071018;
+      --panel: #101d2a;
+      --panel2: #162638;
+      --text: #f1f7ff;
+      --muted: #9db0c5;
+      --accent: #39f5c6;
+      --accent2: #ffd166;
+      --danger: #ff5c7a;
+      --good: #6dff8f;
+      --line: rgba(255,255,255,0.12);
+      --shadow: 0 16px 40px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(57,245,198,0.22), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(255,209,102,0.16), transparent 32%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: grid;
+      gap: 12px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: rgba(16,29,42,0.82);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 8vw, 5.25rem);
+      line-height: 0.9;
+      letter-spacing: -0.08em;
+    }
+
+    .tagline {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 760px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .stat {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.6rem;
+      color: var(--accent);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: rgba(16,29,42,0.88);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card h2 {
+      margin: 0;
+      padding: 18px 18px 0;
+      font-size: 1.4rem;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .scanner-body, .library-body, .maker-body {
+      padding: 18px;
+    }
+
+    #reader {
+      width: 100%;
+      min-height: 280px;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #02070b;
+      border: 1px solid var(--line);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: #02100c;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active { transform: translateY(1px); }
+
+    button.secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    button.warn {
+      background: var(--danger);
+      color: white;
+    }
+
+    .manual {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #07111b;
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(57,245,198,0.16);
+    }
+
+    .message {
+      min-height: 42px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .message.good { color: var(--good); }
+    .message.bad { color: var(--danger); }
+
+    .library-tools {
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      gap: 10px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sprite-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .sprite-card {
+      position: relative;
+      min-height: 174px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .sprite-art {
+      width: 86px;
+      height: 86px;
+      margin: 4px auto 2px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      font-size: 3rem;
+      background: rgba(255,255,255,0.08);
+      image-rendering: pixelated;
+    }
+
+    .sprite-card h3 {
+      margin: 0;
+      text-align: center;
+      font-size: 1rem;
+    }
+
+    .sprite-card small {
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .rarity {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--line);
+    }
+
+    .common .rarity { color: #c7d2fe; }
+    .rare .rarity { color: #39f5c6; }
+    .legendary .rarity { color: #ffd166; }
+
+    .empty {
+      color: var(--muted);
+      padding: 24px;
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 22px;
+    }
+
+    .maker {
+      margin-top: 16px;
+    }
+
+    .maker-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .qr-output {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #07111b;
+      border: 1px solid var(--line);
+      word-break: break-word;
+      color: var(--muted);
+    }
+
+    footer {
+      color: var(--muted);
+      text-align: center;
+      padding: 18px 0 8px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr 1fr 1fr; }
+      .library-tools { grid-template-columns: 1fr; }
+      .manual { grid-template-columns: 1fr; }
+      .maker-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>QR Hunter</h1>
+      <p class="tagline">Find hidden QR codes in the wild. Scan them. Unlock sprites. Build your local collection like a tiny digital creature goblin with a camera.</p>
+      <div class="stats">
+        <div class="stat"><strong id="foundCount">0</strong><span>Found</span></div>
+        <div class="stat"><strong id="totalCount">0</strong><span>Total Known</span></div>
+        <div class="stat"><strong id="percentCount">0%</strong><span>Complete</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Scan Hunt Code</h2>
+        <div class="scanner-body">
+          <div id="reader"></div>
+          <div class="controls">
+            <button id="startScanBtn">Start Camera</button>
+            <button id="stopScanBtn" class="secondary">Stop Camera</button>
+          </div>
+
+          <div class="manual">
+            <input id="manualCode" placeholder="Paste a QR Hunter code here" />
+            <button id="claimManualBtn" class="secondary">Claim</button>
+          </div>
+
+          <div id="message" class="message">Camera scanning works best from a secure https page, like GitHub Pages.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Your Sprite Library</h2>
+        <div class="library-tools">
+          <input id="searchInput" placeholder="Search sprites" />
+          <select id="rarityFilter">
+            <option value="all">All rarities</option>
+            <option value="common">Common</option>
+            <option value="rare">Rare</option>
+            <option value="legendary">Legendary</option>
+          </select>
+        </div>
+        <div class="library-body">
+          <div id="spriteGrid" class="sprite-grid"></div>
+        </div>
+      </section>
+    </main>
+
+    <section class="card maker">
+      <h2>Test QR Code Maker</h2>
+      <div class="maker-body">
+        <p>Use this while building the game. Pick a sprite, copy the generated payload, then turn it into a QR code using any QR generator. Later we can build QR image generation directly into this app.</p>
+        <div class="maker-grid">
+          <select id="makerSprite"></select>
+          <input id="makerLocation" placeholder="Location hint, optional" />
+          <button id="makePayloadBtn">Make Payload</button>
+          <button id="resetBtn" class="warn">Reset Library</button>
+        </div>
+        <div id="qrOutput" class="qr-output">No payload made yet.</div>
+      </div>
+    </section>
+
+    <footer>QR Hunter v0.1 local prototype</footer>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "qrHunterLibraryV1";
+
+    const SPRITES = [
+      {
+        id: "spark-mite",
+        name: "Spark Mite",
+        emoji: "⚡",
+        rarity: "common",
+        habitat: "Power outlets, venues, rehearsal rooms",
+        description: "A jumpy little voltage gremlin. Probably humming in B flat."
+      },
+      {
+        id: "puckling",
+        name: "Puckling",
+        emoji: "🏒",
+        rarity: "common",
+        habitat: "Arcades, game rooms, tournament tables",
+        description: "Small, fast, and convinced every rebound was intentional."
+      },
+      {
+        id: "moss-bloop",
+        name: "Moss Bloop",
+        emoji: "🌿",
+        rarity: "common",
+        habitat: "Parks, gardens, sleepy sidewalks",
+        description: "Soft, friendly, and only slightly damp emotionally."
+      },
+      {
+        id: "neon-newt",
+        name: "Neon Newt",
+        emoji: "🦎",
+        rarity: "rare",
+        habitat: "Murals, music venues, late night snack zones",
+        description: "Glows under stage lights and makes terrible decisions after midnight."
+      },
+      {
+        id: "echo-owl",
+        name: "Echo Owl",
+        emoji: "🦉",
+        rarity: "rare",
+        habitat: "Libraries, theaters, quiet corners",
+        description: "Repeats everything it hears, but somehow with better timing."
+      },
+      {
+        id: "golden-gobbo",
+        name: "Golden Gobbo",
+        emoji: "👑",
+        rarity: "legendary",
+        habitat: "Secret spots and championship locations",
+        description: "The rarest little menace. Demands tribute in snacks."
+      }
+    ];
+
+    let scanner = null;
+    let isScanning = false;
+
+    const foundCount = document.getElementById("foundCount");
+    const totalCount = document.getElementById("totalCount");
+    const percentCount = document.getElementById("percentCount");
+    const spriteGrid = document.getElementById("spriteGrid");
+    const message = document.getElementById("message");
+    const manualCode = document.getElementById("manualCode");
+    const searchInput = document.getElementById("searchInput");
+    const rarityFilter = document.getElementById("rarityFilter");
+    const makerSprite = document.getElementById("makerSprite");
+    const makerLocation = document.getElementById("makerLocation");
+    const qrOutput = document.getElementById("qrOutput");
+
+    function loadLibrary() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveLibrary(library) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(library));
+    }
+
+    function setMessage(text, type = "") {
+      message.textContent = text;
+      message.className = `message ${type}`.trim();
+    }
+
+    function normalizePayload(raw) {
+      const trimmed = String(raw || "").trim();
+      if (!trimmed) return null;
+
+      if (trimmed.startsWith("QRHUNTER:")) {
+        const encoded = trimmed.replace("QRHUNTER:", "");
+        try {
+          return JSON.parse(atob(encoded));
+        } catch {
+          return null;
+        }
+      }
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        return parsed;
+      } catch {
+        const sprite = SPRITES.find(item => item.id === trimmed);
+        return sprite ? { game: "QRHunter", spriteId: sprite.id } : null;
+      }
+    }
+
+    function claimSprite(rawPayload) {
+      const payload = normalizePayload(rawPayload);
+      if (!payload || payload.game !== "QRHunter" || !payload.spriteId) {
+        setMessage("That QR code is not a valid QR Hunter sprite. The creature escaped through paperwork.", "bad");
+        return;
+      }
+
+      const sprite = SPRITES.find(item => item.id === payload.spriteId);
+      if (!sprite) {
+        setMessage("This is a QR Hunter code, but this sprite is not in this version of the game yet.", "bad");
+        return;
+      }
+
+      const library = loadLibrary();
+      const alreadyFound = Boolean(library[sprite.id]);
+
+      library[sprite.id] = {
+        spriteId: sprite.id,
+        foundAt: library[sprite.id]?.foundAt || new Date().toISOString(),
+        locationHint: payload.locationHint || library[sprite.id]?.locationHint || "Mystery spot"
+      };
+
+      saveLibrary(library);
+      renderLibrary();
+
+      if (alreadyFound) {
+        setMessage(`${sprite.name} was already in your library. Still counts as saying hello to a tiny weird friend.`, "good");
+      } else {
+        setMessage(`New sprite found: ${sprite.name}! Added to your library.`, "good");
+      }
+    }
+
+    async function startScanner() {
+      if (isScanning) return;
+
+      try {
+        scanner = new Html5Qrcode("reader");
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          decodedText => claimSprite(decodedText),
+          () => {}
+        );
+        isScanning = true;
+        setMessage("Camera active. Point it at a QR Hunter code.", "good");
+      } catch (error) {
+        setMessage("Camera could not start. On phones, open this from https and allow camera access.", "bad");
+      }
+    }
+
+    async function stopScanner() {
+      if (!scanner || !isScanning) return;
+      try {
+        await scanner.stop();
+        scanner.clear();
+        isScanning = false;
+        setMessage("Camera stopped. The sprites are pretending this is normal.");
+      } catch {
+        setMessage("Could not stop the camera cleanly. Refreshing the page will reset it.", "bad");
+      }
+    }
+
+    function renderStats(library) {
+      const found = Object.keys(library).length;
+      const total = SPRITES.length;
+      foundCount.textContent = found;
+      totalCount.textContent = total;
+      percentCount.textContent = `${Math.round((found / total) * 100)}%`;
+    }
+
+    function renderLibrary() {
+      const library = loadLibrary();
+      const query = searchInput.value.trim().toLowerCase();
+      const rarity = rarityFilter.value;
+
+      renderStats(library);
+
+      const foundSprites = SPRITES
+        .filter(sprite => library[sprite.id])
+        .filter(sprite => rarity === "all" || sprite.rarity === rarity)
+        .filter(sprite => {
+          if (!query) return true;
+          return [sprite.name, sprite.id, sprite.habitat, sprite.description, sprite.rarity]
+            .join(" ")
+            .toLowerCase()
+            .includes(query);
+        });
+
+      if (!foundSprites.length) {
+        spriteGrid.innerHTML = `<div class="empty">No sprites here yet. Go scan something suspiciously square.</div>`;
+        return;
+      }
+
+      spriteGrid.innerHTML = foundSprites.map(sprite => {
+        const entry = library[sprite.id];
+        const date = new Date(entry.foundAt).toLocaleDateString();
+        return `
+          <article class="sprite-card ${sprite.rarity}">
+            <span class="rarity">${sprite.rarity}</span>
+            <div class="sprite-art">${sprite.emoji}</div>
+            <h3>${sprite.name}</h3>
+            <small>${sprite.habitat}</small>
+            <small>Found: ${date}</small>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function setupMaker() {
+      makerSprite.innerHTML = SPRITES.map(sprite => (
+        `<option value="${sprite.id}">${sprite.name} (${sprite.rarity})</option>`
+      )).join("");
+    }
+
+    function makePayload() {
+      const payload = {
+        game: "QRHunter",
+        version: 1,
+        spriteId: makerSprite.value,
+        locationHint: makerLocation.value.trim() || "Mystery spot"
+      };
+
+      const encoded = `QRHUNTER:${btoa(JSON.stringify(payload))}`;
+      qrOutput.innerHTML = `
+        <strong>Copy this payload into a QR generator:</strong><br><br>
+        ${encoded}<br><br>
+        <button class="secondary" onclick="navigator.clipboard.writeText('${encoded}')">Copy Payload</button>
+      `;
+    }
+
+    document.getElementById("startScanBtn").addEventListener("click", startScanner);
+    document.getElementById("stopScanBtn").addEventListener("click", stopScanner);
+    document.getElementById("claimManualBtn").addEventListener("click", () => claimSprite(manualCode.value));
+    document.getElementById("makePayloadBtn").addEventListener("click", makePayload);
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (!confirm("Reset your local sprite library?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      renderLibrary();
+      setMessage("Library reset. The sprites have scattered like tiny cowards.");
+    });
+
+    searchInput.addEventListener("input", renderLibrary);
+    rarityFilter.addEventListener("change", renderLibrary);
+
+    setupMaker();
+    renderLibrary();
+  </script>
+</body>
+</html>
